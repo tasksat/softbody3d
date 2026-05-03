@@ -14,4 +14,8 @@ export class Gui {
     };
     this.gui.add(params, "resetCamera").name("Reset Camera");
   }
+
+  dispose() {
+    this.gui.destroy();
+  }
 }

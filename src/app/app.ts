@@ -14,6 +14,10 @@ export class App {
     this.animate();
   }
 
+  dispose() {
+    this.gui.dispose();
+  }
+
   private animate = () => {
     requestAnimationFrame(this.animate);
     this.sceneView.update();
