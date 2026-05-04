@@ -63,7 +63,6 @@ export class SceneView {
     this.addLights();
     this.addFloor();
     this.addHelper();
-    this.addTestObject();
 
     window.addEventListener("resize", this.onResize);
   }
@@ -83,6 +82,14 @@ export class SceneView {
     this.controls.target.copy(this.initialControlsTarget);
     this.controls.update();
     this.camera.updateMatrixWorld();
+  }
+
+  addObject(object: THREE.Object3D) {
+    this.scene.add(object);
+  }
+
+  removeObject(object: THREE.Object3D) {
+    this.scene.remove(object);
   }
 
   private onPointerUp = (event: PointerEvent) => {
@@ -143,20 +150,6 @@ export class SceneView {
     const grid = new THREE.GridHelper(20.0, 20, 0xaaaaaa, 0xaaaaaa);
     grid.position.set(0.0, 0.005, 0.0);
     this.scene.add(grid);
-  }
-
-  private addTestObject() {
-    const geometry = new THREE.BoxGeometry(0.5, 2.0, 0.5);
-    const material = new THREE.MeshPhongMaterial({
-      color: 0x00aaff,
-    });
-
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(0.0, 1.0, 0.0);
-    cube.castShadow = true;
-    cube.receiveShadow = true;
-
-    this.scene.add(cube);
   }
 
   private onResize = () => {

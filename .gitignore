@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Tetgen
+tetgen/
+
+*.node
+*.ele
+*.face
+*.edge
+*.neigh
+*.smesh
+*.poly
+
