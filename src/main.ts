@@ -5,5 +5,6 @@ import { defaultMeshAsset } from "./config/meshes";
 const app = new App({
   initialMesh: defaultMeshAsset,
   initialWireframeVisibility: false,
+  initialRunning: false,
 });
 app.start();

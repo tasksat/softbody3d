@@ -5,10 +5,12 @@ import { TetMeshRenderer } from "../render/wireframe";
 import { MeshRenderer } from "../render/mesh";
 import { Gui } from "../ui/gui";
 import { findMeshAsset, meshAssets, type MeshAsset } from "../config/meshes";
+import { SoftBodySolver } from "../simulation/solver";
 
 type AppOptions = {
   initialMesh: MeshAsset;
   initialWireframeVisibility: boolean;
+  initialRunning: boolean;
 };
 
 export class App {
@@ -23,14 +25,21 @@ export class App {
 
   private showWireframe = false;
 
+  private solver: SoftBodySolver | null = null;
+  private simulationRunning: boolean;
+
   constructor(options: AppOptions) {
     this.options = options;
 
     this.sceneView = new SceneView();
+
+    this.simulationRunning = options.initialRunning;
+
     this.gui = new Gui({
       meshAssets,
       initialMeshId: this.options.initialMesh.id,
       initialWireframeVisibility: this.options.initialWireframeVisibility,
+      initialRunning: this.options.initialRunning,
       callbacks: {
         resetCamera: () => this.sceneView.resetCamera(),
         selectMesh: (id: string) => {
@@ -41,6 +50,10 @@ export class App {
         setWireframeVisibility: (visible: boolean) => {
           this.showWireframe = visible;
           this.tetMeshRenderer?.setVisible(visible);
+        },
+        resetSimulation: () => this.resetSimulation(),
+        setSimulationRunning: (running: boolean) => {
+          this.setSimulationRunning(running);
         },
       },
     });
@@ -55,6 +68,19 @@ export class App {
     this.meshRenderer?.dispose();
     this.tetMeshRenderer?.dispose();
     this.gui.dispose();
+  }
+
+  private resetSimulation() {
+    this.solver?.reset();
+    this.setSimulationRunning(false);
+    this.gui.setSimulationRunning(false);
+    if (this.solver !== null && this.tetMeshRenderer !== null) {
+      this.tetMeshRenderer.update(this.solver.positions);
+    }
+  }
+
+  private setSimulationRunning(running: boolean) {
+    this.simulationRunning = running;
   }
 
   private async switchMesh(id: string) {
@@ -95,6 +121,16 @@ export class App {
         meshData.transform,
       );
 
+      this.solver = new SoftBodySolver(tetMeshData, {
+        dt: 1.0 / 60.0,
+        substeps: 10,
+        iterations: 1,
+        gravity: new Float32Array([0.0, -9.8, 0.0]),
+        damping: 0.0,
+        volCompliance: 0.0,
+        edgeCompliance: 0.0,
+      });
+
       this.tetMeshRenderer = new TetMeshRenderer(tetMeshData);
       this.tetMeshRenderer.setVisible(this.showWireframe);
       this.sceneView.addObject(this.tetMeshRenderer.getObject3D());
@@ -103,6 +139,14 @@ export class App {
 
   private animate = () => {
     requestAnimationFrame(this.animate);
+
+    if (this.simulationRunning && this.solver !== null) {
+      this.solver.simulate();
+      if (this.tetMeshRenderer !== null) {
+        this.tetMeshRenderer.update(this.solver.positions);
+      }
+    }
+
     this.sceneView.update();
     this.sceneView.render();
   };

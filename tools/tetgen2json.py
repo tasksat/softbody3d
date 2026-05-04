@@ -136,6 +136,111 @@ def read_ele(path: Path, index_base: int) -> list[int]:
     return tet_ids
 
 
+def tet_volume(verts: list[float], ids: list[int]) -> float:
+    """
+    Compute signed tetrahedron volume with the convention:
+
+      V = dot(cross(x1 - x0, x2 - x0), x3 - x0) / 6
+    """
+    i0, i1, i2, i3 = ids
+
+    x0 = verts[3 * i0 + 0]
+    y0 = verts[3 * i0 + 1]
+    z0 = verts[3 * i0 + 2]
+
+    x1 = verts[3 * i1 + 0]
+    y1 = verts[3 * i1 + 1]
+    z1 = verts[3 * i1 + 2]
+
+    x2 = verts[3 * i2 + 0]
+    y2 = verts[3 * i2 + 1]
+    z2 = verts[3 * i2 + 2]
+
+    x3 = verts[3 * i3 + 0]
+    y3 = verts[3 * i3 + 1]
+    z3 = verts[3 * i3 + 2]
+
+    ax = x1 - x0
+    ay = y1 - y0
+    az = z1 - z0
+
+    bx = x2 - x0
+    by = y2 - y0
+    bz = z2 - z0
+
+    cx = x3 - x0
+    cy = y3 - y0
+    cz = z3 - z0
+
+    cross_x = ay * bz - az * by
+    cross_y = az * bx - ax * bz
+    cross_z = ax * by - ay * bx
+
+    return (cross_x * cx + cross_y * cy + cross_z * cz) / 6.0
+
+
+def orient_tets_positive(
+    verts: list[float],
+    tet_ids: list[int],
+    eps: float,
+) -> tuple[int, int, int, float, float]:
+    """
+    Make tet orientations positive with respect to:
+
+      V = dot(cross(x1 - x0, x2 - x0), x3 - x0) / 6
+
+    If a tet has negative signed volume, swap its first two vertices.
+
+    Returns:
+      positive_count,
+      flipped_count,
+      near_zero_count,
+      min_volume_after_orientation,
+      max_volume_after_orientation
+    """
+    if len(tet_ids) % 4 != 0:
+        raise ValueError("tetIds length must be divisible by 4")
+
+    positive = 0
+    flipped = 0
+    near_zero = 0
+
+    min_volume = float("inf")
+    max_volume = float("-inf")
+
+    num_tets = len(tet_ids) // 4
+
+    for t in range(num_tets):
+        base = 4 * t
+        ids = tet_ids[base : base + 4]
+
+        volume = tet_volume(verts, ids)
+
+        if volume > eps:
+            positive += 1
+        elif volume < -eps:
+            # Swapping any two vertices flips the orientation.
+            tet_ids[base + 0], tet_ids[base + 1] = (
+                tet_ids[base + 1],
+                tet_ids[base + 0],
+            )
+            flipped += 1
+
+            ids = tet_ids[base : base + 4]
+            volume = tet_volume(verts, ids)
+        else:
+            near_zero += 1
+
+        min_volume = min(min_volume, volume)
+        max_volume = max(max_volume, volume)
+
+    if num_tets == 0:
+        min_volume = 0.0
+        max_volume = 0.0
+
+    return positive, flipped, near_zero, min_volume, max_volume
+
+
 def build_edge_ids(tet_ids: list[int]) -> list[int]:
     """
     Build unique undirected edges from tetrahedra.
@@ -209,10 +314,30 @@ def main() -> None:
         help="Pretty-print JSON with the given indent. Default: compact JSON.",
     )
 
+    parser.add_argument(
+        "--eps",
+        type=float,
+        default=1e-14,
+        help="Threshold for treating signed tet volume as near zero.",
+    )
+
     args = parser.parse_args()
 
     verts, index_base = read_node(args.node)
     tet_ids = read_ele(args.ele, index_base)
+
+    (
+        positive_tets,
+        flipped_tets,
+        near_zero_tets,
+        min_volume,
+        max_volume,
+    ) = orient_tets_positive(
+        verts,
+        tet_ids,
+        args.eps,
+    )
+
     edge_ids = build_edge_ids(tet_ids)
 
     num_vertices = len(verts) // 3
@@ -247,6 +372,11 @@ def main() -> None:
     print(f"tets:     {num_tets}")
     print(f"edges:    {num_edges}")
     print(f"index base detected from .node: {index_base}")
+    print(f"positive tets before flip: {positive_tets}")
+    print(f"flipped negative tets:     {flipped_tets}")
+    print(f"near-zero tets:            {near_zero_tets}")
+    print(f"min signed volume after orientation: {min_volume}")
+    print(f"max signed volume after orientation: {max_volume}")
 
 
 if __name__ == "__main__":
