@@ -1,5 +1,5 @@
 import type { TetMeshData } from "../loaders/simloader";
-import * as vecMath from "./vecmath";
+import * as vecMath from "./math/vec";
 
 export type SolverParams = {
   dt: number;

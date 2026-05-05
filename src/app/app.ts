@@ -6,6 +6,7 @@ import { MeshRenderer } from "../render/mesh";
 import { Gui } from "../ui/gui";
 import { findMeshAsset, meshAssets, type MeshAsset } from "../config/meshes";
 import { SoftBodySolver } from "../simulation/solver";
+import { VisualSkinner } from "../simulation/skinner";
 
 type AppOptions = {
   initialMesh: MeshAsset;
@@ -27,6 +28,9 @@ export class App {
 
   private solver: SoftBodySolver | null = null;
   private simulationRunning: boolean;
+
+  private skinner: VisualSkinner | null = null;
+  private visPos: Float32Array | null = null;
 
   constructor(options: AppOptions) {
     this.options = options;
@@ -77,6 +81,15 @@ export class App {
     if (this.solver !== null && this.tetMeshRenderer !== null) {
       this.tetMeshRenderer.update(this.solver.positions);
     }
+    if (
+      this.solver !== null &&
+      this.skinner !== null &&
+      this.visPos !== null &&
+      this.meshRenderer !== null
+    ) {
+      this.skinner.update(this.visPos, this.solver.positions);
+      this.meshRenderer.update();
+    }
   }
 
   private setSimulationRunning(running: boolean) {
@@ -105,6 +118,8 @@ export class App {
       this.sceneView.removeObject(this.meshRenderer.getObject3D());
       this.meshRenderer.dispose();
       this.meshRenderer = null;
+      this.skinner = null;
+      this.visPos = null;
     }
 
     if (this.tetMeshRenderer !== null) {
@@ -134,6 +149,13 @@ export class App {
       this.tetMeshRenderer = new TetMeshRenderer(tetMeshData);
       this.tetMeshRenderer.setVisible(this.showWireframe);
       this.sceneView.addObject(this.tetMeshRenderer.getObject3D());
+
+      this.visPos = meshData.positions;
+      this.skinner = new VisualSkinner(
+        meshData.positions,
+        tetMeshData.verts,
+        tetMeshData.tetIds,
+      );
     }
   }
 
@@ -144,6 +166,14 @@ export class App {
       this.solver.simulate();
       if (this.tetMeshRenderer !== null) {
         this.tetMeshRenderer.update(this.solver.positions);
+      }
+      if (
+        this.skinner !== null &&
+        this.visPos !== null &&
+        this.meshRenderer !== null
+      ) {
+        this.skinner.update(this.visPos, this.solver.positions);
+        this.meshRenderer.update();
       }
     }
 
