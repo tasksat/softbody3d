@@ -92,6 +92,10 @@ export class SceneView {
     this.scene.remove(object);
   }
 
+  setControlsEnabled(enabled: boolean) {
+    this.controls.enabled = enabled;
+  }
+
   private onPointerUp = (event: PointerEvent) => {
     this.viewHelper.handleClick(event);
   };
@@ -127,16 +131,13 @@ export class SceneView {
     spotLight.shadow.camera.far = 10;
     spotLight.shadow.mapSize.set(1024, 1024);
     this.scene.add(spotLight);
-
-    // Fog
-    this.scene.fog = new THREE.Fog(0x000000, 0, 16);
   }
 
   private addFloor() {
     const geometry = new THREE.PlaneGeometry(20.0, 20.0);
     const material = new THREE.MeshPhongMaterial({
       color: 0xa0adaf,
-      shininess: 150,
+      shininess: 1000,
     });
     const floor = new THREE.Mesh(geometry, material);
     floor.rotation.x = -Math.PI / 2.0;
@@ -162,4 +163,14 @@ export class SceneView {
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(window.devicePixelRatio);
   };
+
+  // API for Grabber
+
+  getCamera() {
+    return this.camera;
+  }
+
+  getDomElement() {
+    return this.renderer.domElement;
+  }
 }

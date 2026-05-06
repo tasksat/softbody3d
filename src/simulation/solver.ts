@@ -1,6 +1,98 @@
 import type { TetMeshData } from "../loaders/simloader";
 import * as vecMath from "./math/vec";
 
+export type Vec3 = {
+  x: number;
+  y: number;
+  z: number;
+};
+
+export type SolverGrabberAPI = {
+  readonly active: boolean;
+  start(point: Vec3, maxDist: number): boolean;
+  move(point: Vec3, velocity: Vec3): void;
+  end(velocity: Vec3): void;
+  cancel(): void;
+};
+
+const vel0: Vec3 = { x: 0.0, y: 0.0, z: 0.0 };
+
+class SolverGrabber implements SolverGrabberAPI {
+  private readonly solver: SoftBodySolver;
+
+  private id = -1;
+  private temp = 0.0;
+
+  constructor(solver: SoftBodySolver) {
+    this.solver = solver;
+  }
+
+  get active(): boolean {
+    return this.id >= 0;
+  }
+
+  start(point: Vec3, maxDist: number): boolean {
+    this.cancel();
+
+    let bestId = -1;
+    let bestDist = maxDist * maxDist;
+    const positions = this.solver.positions;
+    const numParticles = this.solver.getNumParticles();
+    for (let i = 0; i < numParticles; i++) {
+      if (this.solver.getInvMass(i) <= 0.0) continue;
+      const dx = positions[3 * i + 0] - point.x;
+      const dy = positions[3 * i + 1] - point.y;
+      const dz = positions[3 * i + 2] - point.z;
+      const dist2 = dx * dx + dy * dy + dz * dz;
+      if (dist2 < bestDist) {
+        bestDist = dist2;
+        bestId = i;
+      }
+    }
+
+    if (bestId < 0) {
+      return false;
+    }
+
+    this.id = bestId;
+    this.temp = this.solver.getInvMass(this.id);
+
+    this.solver.setInvMass(this.id, 0.0);
+    this.solver.setState(this.id, point, vel0);
+
+    return true;
+  }
+
+  move(point: Vec3, velocity: Vec3): void {
+    if (!this.active) {
+      return;
+    }
+
+    this.solver.setState(this.id, point, velocity);
+  }
+
+  end(velocity: Vec3): void {
+    if (!this.active) {
+      return;
+    }
+
+    this.solver.setInvMass(this.id, this.temp);
+    this.solver.setVelocity(this.id, velocity);
+    this.id = -1;
+    this.temp = 0.0;
+  }
+
+  cancel(): void {
+    if (!this.active) {
+      return;
+    }
+
+    this.solver.setInvMass(this.id, this.temp);
+    this.id = -1;
+    this.temp = 0.0;
+  }
+}
+
 export type SolverParams = {
   dt: number;
   iterations: number;
@@ -13,6 +105,7 @@ export type SolverParams = {
 
 export class SoftBodySolver {
   readonly positions: Float32Array;
+  readonly grab: SolverGrabberAPI;
 
   private readonly velocities: Float32Array;
   private readonly prevPos: Float32Array;
@@ -43,6 +136,7 @@ export class SoftBodySolver {
 
   constructor(tetMesh: TetMeshData, params: SolverParams) {
     this.positions = new Float32Array(tetMesh.verts);
+    this.grab = new SolverGrabber(this);
 
     this.velocities = new Float32Array(tetMesh.verts.length);
     this.restPos = new Float32Array(tetMesh.verts);
@@ -85,6 +179,7 @@ export class SoftBodySolver {
   }
 
   reset() {
+    this.grab.cancel();
     this.temp.fill(0.0);
     this.grad.fill(0.0);
     this.positions.set(this.restPos);
@@ -102,9 +197,9 @@ export class SoftBodySolver {
       vecMath.copy(this.prevPos, i, this.positions, i);
       vecMath.add(this.positions, i, this.velocities, i, dt);
       const y = this.positions[3 * i + 1];
-      if (y < 0.0) {
+      if (y < 0.02) {
         vecMath.copy(this.positions, i, this.prevPos, i);
-        this.positions[3 * i + 1] = 0.0;
+        this.positions[3 * i + 1] = 0.02;
       }
     }
   }
@@ -186,6 +281,14 @@ export class SoftBodySolver {
     }
   }
 
+  setEdgeCompliance(value: number) {
+    this.params.edgeCompliance = value;
+  }
+
+  setVolCompliance(value: number) {
+    this.params.volCompliance = value;
+  }
+
   private initialize() {
     this.invMass.fill(0.0);
     this.restVolumes.fill(0.0);
@@ -221,5 +324,39 @@ export class SoftBodySolver {
     vecMath.setDiff(this.temp, 2, this.positions, id3, this.positions, id0);
     vecMath.setCross(this.temp, 3, this.temp, 0, this.temp, 1);
     return vecMath.dot(this.temp, 2, this.temp, 3) / 6.0;
+  }
+
+  // API for SolverGrabber
+
+  getNumParticles(): number {
+    return this.numParticles;
+  }
+
+  getInvMass(i: number): number {
+    return this.invMass[i];
+  }
+
+  setInvMass(i: number, val: number) {
+    this.invMass[i] = val;
+  }
+
+  setPosition(i: number, point: Vec3) {
+    this.positions[3 * i + 0] = point.x;
+    this.positions[3 * i + 1] = point.y;
+    this.positions[3 * i + 2] = point.z;
+  }
+
+  setVelocity(i: number, velocity: Vec3) {
+    this.velocities[3 * i + 0] = velocity.x;
+    this.velocities[3 * i + 1] = velocity.y;
+    this.velocities[3 * i + 2] = velocity.z;
+  }
+
+  setState(i: number, point: Vec3, velocity: Vec3) {
+    this.setPosition(i, point);
+    this.setVelocity(i, velocity);
+    this.prevPos[3 * i + 0] = point.x;
+    this.prevPos[3 * i + 1] = point.y;
+    this.prevPos[3 * i + 2] = point.z;
   }
 }

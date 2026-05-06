@@ -6,5 +6,7 @@ const app = new App({
   initialMesh: defaultMeshAsset,
   initialWireframeVisibility: false,
   initialRunning: false,
+  initialEdgeCompliance: 0.0,
+  initialVolCompliance: 0.0,
 });
 app.start();

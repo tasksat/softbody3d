@@ -7,6 +7,7 @@ type GuiCallbacks = {
   setWireframeVisibility: (visible: boolean) => void;
   resetSimulation: () => void;
   setSimulationRunning: (running: boolean) => void;
+  setEdgeCompliance: (value: number) => void;
 };
 
 type GuiOptions = {
@@ -14,6 +15,7 @@ type GuiOptions = {
   initialMeshId: string;
   initialWireframeVisibility: boolean;
   initialRunning: boolean;
+  initialEdgeCompliance: number;
   callbacks: GuiCallbacks;
 };
 
@@ -23,6 +25,7 @@ type GuiParams = {
   showWireframe: boolean;
   resetSimulation: () => void;
   simulationRunning: boolean;
+  edgeCompliance: number;
 };
 
 export class Gui {
@@ -39,6 +42,7 @@ export class Gui {
       showWireframe: options.initialWireframeVisibility,
       resetSimulation: options.callbacks.resetSimulation,
       simulationRunning: options.initialRunning,
+      edgeCompliance: options.initialEdgeCompliance,
     };
 
     const meshOptions = Object.fromEntries(
@@ -66,6 +70,15 @@ export class Gui {
       .name("Simulation Running")
       .onChange((running: boolean) => {
         options.callbacks.setSimulationRunning(running);
+      });
+
+    const simulationFolder = this.gui.addFolder("Simulation");
+
+    simulationFolder
+      .add(this.params, "edgeCompliance", 0.0, 5.0, 0.1)
+      .name("Compliance")
+      .onChange((value: number) => {
+        options.callbacks.setEdgeCompliance(value);
       });
   }
 

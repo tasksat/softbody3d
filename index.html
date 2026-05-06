@@ -7,6 +7,39 @@
   </head>
   <body>
     <div id="app"></div>
+   <div id="stats">
+  <div class="stats-fps">FPS: <span id="stats-fps">--.-</span></div>
+
+  <div class="stats-group">
+    <div class="stats-section">Visual Mesh</div>
+    <br>
+    <div class="stats-row">
+      <span>vertices:</span>
+      <span id="stats-vis-verts">--</span>
+    </div>
+    <div class="stats-row">
+      <span>faces:</span>
+      <span id="stats-vis-faces">--</span>
+    </div>
+  </div>
+
+  <div class="stats-group">
+    <div class="stats-section">Physics Mesh</div>
+    <br>
+    <div class="stats-row">
+      <span>vertices:</span>
+      <span id="stats-sim-verts">--</span>
+    </div>
+    <div class="stats-row">
+      <span>edges:</span>
+      <span id="stats-sim-edges">--</span>
+    </div>
+    <div class="stats-row">
+      <span>tetrahedra:</span>
+      <span id="stats-sim-tets">--</span>
+    </div>
+  </div>
+</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
