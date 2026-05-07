@@ -196,11 +196,7 @@ export class SoftBodySolver {
       vecMath.scale(this.velocities, i, 1.0 - damping);
       vecMath.copy(this.prevPos, i, this.positions, i);
       vecMath.add(this.positions, i, this.velocities, i, dt);
-      const y = this.positions[3 * i + 1];
-      if (y < 0.02) {
-        vecMath.copy(this.positions, i, this.prevPos, i);
-        this.positions[3 * i + 1] = 0.02;
-      }
+      this.solveBoxConstraint(-10.0, 10.0, 0.02, 100.0, -10.0, 10.0, i);
     }
   }
 
@@ -222,6 +218,34 @@ export class SoftBodySolver {
         1.0 / dt,
       );
     }
+  }
+
+  private solveBoxConstraint(
+    minX: number,
+    maxX: number,
+    minY: number,
+    maxY: number,
+    minZ: number,
+    maxZ: number,
+    i: number,
+  ) {
+    const x = this.positions[3 * i + 0];
+    const y = this.positions[3 * i + 1];
+    const z = this.positions[3 * i + 2];
+    const clampedX = Math.min(Math.max(x, minX), maxX);
+    const clampedY = Math.min(Math.max(y, minY), maxY);
+    const clampedZ = Math.min(Math.max(z, minZ), maxZ);
+
+    const collided = clampedX !== x || clampedY !== y || clampedZ !== z;
+
+    if (!collided) return;
+
+    this.positions[3 * i + 0] =
+      clampedX == x ? this.prevPos[3 * i + 0] : clampedX;
+    this.positions[3 * i + 1] =
+      clampedY == y ? this.prevPos[3 * i + 1] : clampedY;
+    this.positions[3 * i + 2] =
+      clampedZ == z ? this.prevPos[3 * i + 2] : clampedZ;
   }
 
   private solveEdgeConstraint(dt: number) {
