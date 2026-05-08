@@ -26,7 +26,7 @@ export class MeshRenderer {
 
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
+    this.mesh.receiveShadow = false;
   }
 
   getObject3D(): THREE.Object3D {
