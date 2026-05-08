@@ -22,8 +22,8 @@ export class SceneView {
     this.camera = new THREE.PerspectiveCamera(
       70,
       window.innerWidth / window.innerHeight,
-      0.01,
-      100,
+      0.05,
+      50,
     );
     this.camera.position.copy(this.initialCameraPosition);
     this.camera.lookAt(this.initialControlsTarget);
@@ -43,8 +43,9 @@ export class SceneView {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.target.copy(this.initialControlsTarget);
     this.controls.zoomSpeed = 2.0;
-    this.controls.panSpeed = 0.4;
+    this.controls.panSpeed = 1.0;
     this.controls.enableDamping = true;
+    this.controls.maxDistance = 40.0;
 
     // View Helper
 
@@ -131,6 +132,34 @@ export class SceneView {
     spotLight.shadow.camera.far = 10;
     spotLight.shadow.mapSize.set(1024, 1024);
     this.scene.add(spotLight);
+
+    const cornerLightTarget = new THREE.Object3D();
+    cornerLightTarget.position.set(0.0, 2.5, 0.0);
+    this.scene.add(cornerLightTarget);
+
+    // Corner Light
+
+    const cornerLightPositions = [
+      [-10.0, 0.1, -10.0],
+      [10.0, 0.1, -10.0],
+      [-10.0, 0.1, 10.0],
+      [10.0, 0.1, 10.0],
+    ] as const;
+
+    for (const [x, y, z] of cornerLightPositions) {
+      const light = new THREE.SpotLight(0xffe6b0, 8.0);
+
+      light.position.set(x, y, z);
+      light.target = cornerLightTarget;
+
+      light.angle = Math.PI / 3;
+      light.penumbra = 0.1;
+      light.distance = 12;
+      light.decay = 0.5;
+      light.castShadow = false;
+
+      this.scene.add(light);
+    }
   }
 
   private addFloor() {
