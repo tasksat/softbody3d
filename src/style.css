@@ -28,6 +28,10 @@ body {
   overflow: hidden;
 }
 
+body {
+  background: #000000;
+}
+
 canvas {
   display: block;
 }

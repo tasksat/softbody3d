@@ -6,8 +6,8 @@ export class SceneView {
   private scene: THREE.Scene;
 
   private camera: THREE.PerspectiveCamera;
-  private readonly initialCameraPosition = new THREE.Vector3(0.0, 1.0, 4.0);
-  private readonly initialControlsTarget = new THREE.Vector3(0.0, 0.0, 0.0);
+  private readonly initialCameraPosition = new THREE.Vector3(0.0, 0.5, 4.0);
+  private readonly initialControlsTarget = new THREE.Vector3(0.0, 0.5, 0.0);
 
   private renderer: THREE.WebGLRenderer;
   private controls: OrbitControls;
@@ -23,7 +23,7 @@ export class SceneView {
       70,
       window.innerWidth / window.innerHeight,
       0.05,
-      50,
+      75,
     );
     this.camera.position.copy(this.initialCameraPosition);
     this.camera.lookAt(this.initialControlsTarget);
@@ -45,7 +45,7 @@ export class SceneView {
     this.controls.zoomSpeed = 2.0;
     this.controls.panSpeed = 1.0;
     this.controls.enableDamping = true;
-    this.controls.maxDistance = 40.0;
+    this.controls.maxDistance = 50.0;
 
     // View Helper
 
@@ -63,7 +63,6 @@ export class SceneView {
 
     this.addLights();
     this.addFloor();
-    this.addHelper();
 
     window.addEventListener("resize", this.onResize);
   }
@@ -164,8 +163,9 @@ export class SceneView {
 
   private addFloor() {
     const geometry = new THREE.PlaneGeometry(20.0, 20.0);
+    const texture = this.createCheckerTexture([0xffffff, 0x555555]);
     const material = new THREE.MeshPhongMaterial({
-      color: 0xa0adaf,
+      map: texture,
       shininess: 1000,
     });
     const floor = new THREE.Mesh(geometry, material);
@@ -176,10 +176,40 @@ export class SceneView {
     this.scene.add(floor);
   }
 
-  private addHelper() {
-    const grid = new THREE.GridHelper(20.0, 20, 0xaaaaaa, 0xaaaaaa);
-    grid.position.set(0.0, 0.005, 0.0);
-    this.scene.add(grid);
+  private createCheckerTexture(colors: [number, number]) {
+    const size = 128;
+    const cellSize = size / 2;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+
+    const context = canvas.getContext("2d");
+
+    if (context === null) {
+      throw new Error("failed to create floor texture canvas context.");
+    }
+
+    const color0 = `#${colors[0].toString(16).padStart(6, "0")}`;
+    const color1 = `#${colors[1].toString(16).padStart(6, "0")}`;
+
+    context.fillStyle = color0;
+    context.fillRect(0, 0, cellSize, cellSize);
+    context.fillRect(cellSize, cellSize, cellSize, cellSize);
+
+    context.fillStyle = color1;
+    context.fillRect(cellSize, 0, cellSize, cellSize);
+    context.fillRect(0, cellSize, cellSize, cellSize);
+
+    const texture = new THREE.CanvasTexture(canvas);
+
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(10, 10);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
+
+    return texture;
   }
 
   private onResize = () => {
