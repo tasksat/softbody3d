@@ -1,3 +1,24 @@
+:root {
+  --ui-panel-color: rgba(255, 255, 255, 0.8);
+  --ui-panel-color-strong: rgba(255, 255, 255, 0.9);
+  --ui-panel-bg: rgba(0, 0, 0, 0.2);
+  --ui-panel-border: rgba(255, 255, 255, 0.2);
+  --ui-panel-radius: 8px;
+  --ui-panel-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --ui-panel-blur: blur(2px);
+
+  --ui-panel-padding: 8px;
+  --ui-transition-fast: 120ms ease;
+
+  --stats-font-size: 12px;
+  --stats-min-width: 180px;
+
+  --drawer-panel-width: 260px;
+  --drawer-padding: var(--ui-panel-padding);
+  --drawer-tab-width: 36px;
+  --drawer-bottom: 160px;
+}
+
 html,
 body {
   width: 100%;
@@ -5,11 +26,6 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-}
-
-body {
-  background: #000000;
-  font-family: system-ui, sans-serif;
 }
 
 canvas {
@@ -20,29 +36,43 @@ canvas {
   position: fixed;
   left: 12px;
   top: 12px;
-  z-index: 10;
+  z-index: 98;
 
-  min-width: 180px;
-  padding: 8px;
+  min-width: var(--stats-min-width);
+  padding: var(--ui-panel-padding);
 
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  color: var(--ui-panel-color);
+  background: var(--ui-panel-bg);
+  border: 1px solid var(--ui-panel-border);
+  border-radius: var(--ui-panel-radius);
 
   font-family: monospace;
-  font-size: 12px;
+  font-size: var(--stats-font-size);
   line-height: 1.45;
 
   pointer-events: none;
   user-select: none;
+  cursor: default;
 
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(2px);
+  box-shadow: var(--ui-panel-shadow);
+  backdrop-filter: var(--ui-panel-blur);
 }
 
 .stats-fps {
   margin-bottom: 8px;
+}
+
+#stats.stats-collapsed .stats-fps,
+#stats.stats-expanded .stats-fps {
+  margin-bottom: 0;
+}
+
+#stats.stats-collapsed .stats-group {
+  display: none;
+}
+
+#stats.stats-expanded .stats-group {
+  display: block;
 }
 
 .stats-group {
@@ -51,10 +81,9 @@ canvas {
   margin-top: 8px;
   padding: 10px 9px 7px;
 
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--ui-panel-bg);
+  border: 1px solid var(--ui-panel-border);
   border-radius: 6px;
-
-  background: rgba(0, 0, 0, 0.2);
 }
 
 .stats-section {
@@ -63,14 +92,196 @@ canvas {
 
   padding: 0 5px;
 
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--ui-panel-color-strong);
 
-  font-size: 12px;
+  font-size: var(--stats-font-size);
   line-height: 1;
 }
 
 .stats-row {
   display: grid;
   grid-template-columns: 1fr auto;
-  column-gap: 16px;
+}
+
+.stats-toggle {
+  all: unset;
+
+  display: grid;
+  grid-template-areas: "label";
+  width: max-content;
+  box-sizing: border-box;
+
+  margin: 3px auto 0;
+  padding: 2px 3px;
+
+  color: var(--ui-panel-color);
+  font-size: 0;
+  line-height: 1;
+  text-align: center;
+
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  touch-action: manipulation;
+
+  border-radius: 4px;
+
+  transition:
+    color var(--ui-transition-fast),
+    background var(--ui-transition-fast),
+    transform var(--ui-transition-fast);
+}
+
+.stats-toggle::before,
+.stats-toggle::after {
+  grid-area: label;
+
+  display: block;
+
+  font-size: var(--stats-font-size);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.stats-toggle::before {
+  content: "show info ▼";
+}
+
+.stats-toggle::after {
+  content: "hide info ▲";
+  visibility: hidden;
+}
+
+#stats.stats-expanded .stats-toggle::before {
+  content: "hide info ▲";
+}
+
+.stats-toggle:hover {
+  color: var(--ui-panel-color-strong);
+}
+
+.stats-toggle:active {
+  transform: translateY(1px);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.stats-toggle:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 2px;
+}
+
+.lil-gui.settings-drawer {
+  position: fixed !important;
+  top: auto !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: var(--drawer-bottom) !important;
+  z-index: 99;
+
+  box-sizing: border-box;
+  width: calc(
+    var(--drawer-panel-width) + var(--drawer-padding) * 2 +
+      var(--drawer-tab-width)
+  ) !important;
+  max-width: calc(100vw - 16px);
+  padding: var(--drawer-padding);
+  padding-left: calc(var(--drawer-padding) + var(--drawer-tab-width));
+
+  color: var(--ui-panel-color);
+  background: var(--ui-panel-bg);
+  border: 1px solid var(--ui-panel-border);
+  border-radius: var(--ui-panel-radius);
+
+  box-shadow: var(--ui-panel-shadow);
+  backdrop-filter: var(--ui-panel-blur);
+
+  transform: translateX(
+    calc(100% - var(--drawer-tab-width) + var(--drawer-padding))
+  );
+  transition: transform 180ms ease;
+
+  overflow: hidden !important;
+}
+
+.lil-gui.settings-drawer.is-open {
+  transform: translateX(0);
+}
+
+.lil-gui.settings-drawer > .children {
+  position: relative;
+  z-index: 1;
+
+  box-sizing: border-box;
+  width: var(--drawer-panel-width);
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  border-radius: 6px;
+}
+
+.lil-gui.settings-drawer > .settings-drawer-tab {
+  all: unset;
+
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+
+  box-sizing: border-box;
+  width: var(--drawer-tab-width);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--ui-panel-color);
+  background: transparent;
+  border: none;
+
+  font-family: system-ui, sans-serif;
+  font-size: var(--stats-font-size);
+  letter-spacing: 0.02em;
+
+  cursor: pointer;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.lil-gui.settings-drawer > .settings-drawer-tab:active {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-drawer-tab-label {
+  display: inline-block;
+  white-space: nowrap;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --stats-font-size: 11px;
+
+    --drawer-panel-width: 240px;
+    --drawer-tab-width: 34px;
+  }
+
+  #stats {
+    left: 8px;
+    top: 8px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .lil-gui.settings-drawer {
+    right: 8px !important;
+    bottom: var(--drawer-bottom) !important;
+  }
+
+  .lil-gui.settings-drawer > .children {
+    max-height: calc(100vh - 96px);
+  }
 }

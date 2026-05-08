@@ -1,6 +1,41 @@
 import GUI from "lil-gui";
 import type { MeshAsset } from "../config/meshes";
 
+function setupSettingsDrawer(gui: GUI) {
+  const root = gui.domElement;
+
+  root.classList.add("settings-drawer");
+
+  const tab = document.createElement("button");
+  tab.type = "button";
+  tab.className = "settings-drawer-tab";
+  tab.setAttribute("aria-label", "Toggle controls panel");
+  tab.setAttribute("aria-expanded", "false");
+
+  const label = document.createElement("span");
+  label.className = "settings-drawer-tab-label";
+  label.textContent = "Control Panel";
+
+  tab.appendChild(label);
+  root.appendChild(tab);
+
+  let open = false;
+
+  const setOpen = (nextOpen: boolean) => {
+    open = nextOpen;
+    root.classList.toggle("is-open", open);
+    tab.setAttribute("aria-expanded", String(open));
+  };
+
+  tab.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setOpen(!open);
+  });
+
+  setOpen(false);
+}
+
 type GuiCallbacks = {
   resetCamera: () => void;
   selectMesh: (id: string) => void;
@@ -34,7 +69,13 @@ export class Gui {
   private simulationRunningController: ReturnType<GUI["add"]>;
 
   constructor(options: GuiOptions) {
-    this.gui = new GUI();
+    this.gui = new GUI({
+      width: 260,
+      touchStyles: 0,
+    });
+    this.gui.$title.remove();
+
+    setupSettingsDrawer(this.gui);
 
     this.params = {
       mesh: options.initialMeshId,

@@ -26,6 +26,8 @@ export class App {
 
   private gui: Gui;
 
+  private readonly statsElement = document.getElementById("stats");
+  private readonly statsToggleElement = document.getElementById("stats-toggle");
   private readonly fpsElement = document.getElementById("stats-fps");
   private readonly visVertsElement = document.getElementById("stats-vis-verts");
   private readonly visFacesElement = document.getElementById("stats-vis-faces");
@@ -86,6 +88,8 @@ export class App {
         },
       },
     });
+
+    this.initStatsToggle();
   }
 
   async start() {
@@ -137,6 +141,32 @@ export class App {
     } finally {
       this.loadingMesh = false;
     }
+  }
+
+  private initStatsToggle() {
+    const stats = this.statsElement;
+    const toggle = this.statsToggleElement;
+
+    if (stats === null || toggle === null) {
+      return;
+    }
+
+    const setExpanded = (expanded: boolean) => {
+      stats.classList.toggle("stats-expanded", expanded);
+      stats.classList.toggle("stats-collapsed", !expanded);
+
+      stats.setAttribute("aria-expanded", String(expanded));
+      toggle.setAttribute("aria-expanded", String(expanded));
+      toggle.textContent = expanded ? "hide info ▲" : "show info ▼";
+    };
+
+    setExpanded(false);
+
+    toggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setExpanded(!stats.classList.contains("stats-expanded"));
+    });
   }
 
   private updateFPS(now: number) {
